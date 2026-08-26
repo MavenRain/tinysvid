@@ -12,3 +12,13 @@
  (name test_correspondence)
  (modules test_correspondence)
  (libraries tinysvid svid_model))
+
+(test
+ (name test_der)
+ (modules test_der)
+ (libraries tinysvid))
+
+(test
+ (name test_x509)
+ (modules test_x509)
+ (libraries tinysvid))

@@ -126,8 +126,8 @@ Phase B: typed core.
 - [x] M8 SPIFFE ID parser (sections 2.2-2.3, dot-segment and charset rejects)
 - [x] M9 bundle state machine with phantom Fresh/Grace and rootless Void
 - [x] M10 X.509-SVID leaf checks (URI SAN, flags, window, trust domain)
-- [ ] M11 DER tag-length-value walker, total, over string input
-- [ ] M12 X.509 field extraction (SAN URI, validity, basicConstraints, keyUsage)
+- [x] M11 DER tag-length-value walker, total, over string input
+- [x] M12 X.509 field extraction (SAN URI, validity, basicConstraints, keyUsage)
 - [ ] M13 signature backend as a module type (Ed25519, P-256 provided outside the core)
 - [ ] M14 chain validation: path build to bundle roots plus epoch-gap rule
 

@@ -1,0 +1,6 @@
+; The zx dialect is a subset of OCaml, so the same sources that omlz
+; compiles to SBF artifacts also build as a host library. The gate
+; test/test_zx.ml runs them against the tinysvid core on shared vectors.
+(library
+ (name tinysvid_zx)
+ (modules zx_core zx_charset zx_step zx_window))

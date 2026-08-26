@@ -27,3 +27,8 @@
  (name test_chain)
  (modules test_chain)
  (libraries tinysvid))
+
+(test
+ (name test_zx)
+ (modules test_zx)
+ (libraries tinysvid tinysvid_zx svid_model))

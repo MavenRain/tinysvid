@@ -24,7 +24,9 @@ emits 2.7 to 7.2 KB static `.so` artifacts where equivalent Rust emits 18
 to 23 KB, and cold builds are 3.5x faster. A validation core in the
 ZxCaml dialect fits the tiniest node. The OCaml library is the portable
 superset; the ZxCaml artifacts are the same logic in its smallest form.
-The `zx/zx_core.so` artifact in this repo is 4,312 bytes.
+The four `zx/out/*.so` artifacts in this repo are 3,464 to 5,520
+bytes: zx_core 4,936 B, zx_charset 5,520 B, zx_step 3,544 B, zx_window
+3,464 B.
 
 ## Model-driven method
 
@@ -93,10 +95,19 @@ stamps the current epoch. `degrade` is the only downgrade path.
 that lift and observe commute with degrade. Model drift or code drift
 breaks the gate.
 
-The ZxCaml artifact `zx/zx_core.ml` is the same A1 invariant as an
-inductive-step check over the int-encoded bundle projection, compiled to
-a static SBF object. It returns the violation count; the expected value
-is 0.
+The ZxCaml artifact `zx/zx_core.ml` checks the A1 invariant as an
+inductive step over the int-encoded bundle projection, compiled to a
+static SBF object. A1 as stated is not inductive on the full state cube,
+so the artifact carries the strengthened invariant -- exactly the A4/A5
+epoch-gap rule -- proves it inductive, and proves it implies A1. It
+returns the violation count; the expected value is 0. The other zx
+artifacts mirror the SPIFFE charsets (`zx_charset.ml`), the Coupled
+bundle step (`zx_step.ml`), and the window-plus-gap check
+(`zx_window.ml`). The zx dialect is a subset of OCaml, so the same
+sources build as the host library `tinysvid_zx`, and
+`test/test_zx.ml` holds them to the core and the model on shared
+vectors: all 256 byte codes, all 27 encoded states, and full window and
+gap grids.
 
 ## Layout
 
@@ -133,12 +144,16 @@ Phase B: typed core.
 
 Phase C: ZxCaml artifacts.
 
-- [x] M15 zx dialect audit and A1 inductive-invariant artifact (4,312 B .so)
-- [ ] M16 zx SPIFFE ID charset validator artifact
-- [ ] M17 zx bundle-step artifact (degrade/sync over the int encoding)
-- [ ] M18 zx SVID window-plus-gap check artifact
+- [x] M15 zx dialect audit and A1 inductive-invariant artifact (4,936 B .so;
+      the invariant is strengthened to the A4/A5 gap rule, which is
+      inductive and implies A1)
+- [x] M16 zx SPIFFE ID charset validator artifact (5,520 B .so)
+- [x] M17 zx bundle-step artifact (degrade/sync over the int encoding, 3,544 B .so)
+- [x] M18 zx SVID window-plus-gap check artifact (3,464 B .so)
 - [ ] M19 size table: each zx artifact against its Rust equivalent
-- [ ] M20 differential conformance: host OCaml against zx semantics on shared vectors
+- [x] M20 differential conformance: host OCaml against zx semantics on shared
+      vectors (`test/test_zx.ml`; the zx sources build as the host library
+      `tinysvid_zx`)
 
 Phase D: Workload API.
 

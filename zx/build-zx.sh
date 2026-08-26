@@ -5,5 +5,7 @@ set -euo pipefail
 OMLZ="${OMLZ:-$HOME/Documents/claude1/zxcaml-bench/omlz-run.sh}"
 here="$(cd "$(dirname "$0")" && pwd)"
 mkdir -p "$here/out"
-"$OMLZ" build "$here/zx_core.ml" --target=bpf -o "$here/out/zx_core.so"
-ls -la "$here/out/zx_core.so"
+for name in zx_core zx_charset zx_step zx_window; do
+  "$OMLZ" build "$here/$name.ml" --target=bpf -o "$here/out/$name.so"
+done
+ls -la "$here"/out/*.so

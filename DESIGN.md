@@ -115,6 +115,7 @@ gap grids.
 model/   CTLK model: sub.ml (Sub(1)), modal.ml (adjoint modalities),
          ctlk.ml (fixpoints), frame.ml, props.ml, check.ml (gate)
 lib/     tinysvid library: trust_domain, spiffe_id, bundle, svid
+io/      tinysvid_io library: uds (Unix-domain-socket transport, unix only)
 test/    vectors, behavior tests, model-code correspondence gate
 zx/      ZxCaml dialect artifacts + build script (omlz)
 gates.sh full local gate
@@ -157,9 +158,13 @@ Phase C: ZxCaml artifacts.
 
 Phase D: Workload API.
 
-- [ ] M21 Unix-domain-socket transport, stdlib only
-- [ ] M22 minimal HTTP/2 framing for one client-streaming RPC
-- [ ] M23 protobuf codec for X509SVIDRequest/Response
+- [x] M21 Unix-domain-socket transport, stdlib only (io/uds.ml, library
+      tinysvid_io, unix only)
+- [x] M22 minimal HTTP/2 framing for one client-streaming RPC (lib/h2.ml:
+      frames, settings, gRPC envelope, header-block encoder; decoding of
+      received header blocks is deferred to M24)
+- [x] M23 protobuf codec for X509SVIDRequest/Response (lib/pb.ml: varint,
+      field keys, unknown-field skipping, the two Workload API messages)
 - [ ] M24 client: fetch and watch X509 SVIDs and bundles into typed state
 - [ ] M25 file-based bundle source for fully disconnected nodes
 - [ ] M26 rotation loop wired through Bundle.degrade (the path A1/A7 certify)

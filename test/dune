@@ -32,3 +32,18 @@
  (name test_zx)
  (modules test_zx)
  (libraries tinysvid tinysvid_zx svid_model))
+
+(test
+ (name test_uds)
+ (modules test_uds)
+ (libraries tinysvid_io unix))
+
+(test
+ (name test_h2)
+ (modules test_h2)
+ (libraries tinysvid))
+
+(test
+ (name test_pb)
+ (modules test_pb)
+ (libraries tinysvid))

@@ -1,0 +1,8 @@
+(library
+ (name svid_model)
+ (modules state sub frame modal ctlk props))
+
+(test
+ (name check)
+ (modules check)
+ (libraries svid_model))

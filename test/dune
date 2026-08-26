@@ -1,0 +1,14 @@
+(test
+ (name test_spiffe_id)
+ (modules test_spiffe_id)
+ (libraries tinysvid))
+
+(test
+ (name test_bundle_svid)
+ (modules test_bundle_svid)
+ (libraries tinysvid))
+
+(test
+ (name test_correspondence)
+ (modules test_correspondence)
+ (libraries tinysvid svid_model))

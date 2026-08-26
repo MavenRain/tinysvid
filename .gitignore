@@ -1,0 +1,5 @@
+_build/
+zx/out/
+*.so
+*.map
+.DS_Store

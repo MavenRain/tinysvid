@@ -22,3 +22,8 @@
  (name test_x509)
  (modules test_x509)
  (libraries tinysvid))
+
+(test
+ (name test_chain)
+ (modules test_chain)
+ (libraries tinysvid))

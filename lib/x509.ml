@@ -2,8 +2,11 @@
    over the total DER walker. Extracts exactly what Svid.validate_leaf
    consumes: URI SANs, the validity window as epoch seconds, the
    basicConstraints cA flag, and the keyUsage bits. Everything else in
-   the certificate is walked past, not interpreted. Signature checking
-   is a later milestone (M13/M14). *)
+   the certificate is walked past, not interpreted. parse_full
+   additionally keeps what chain validation (Chain.Make) consumes: raw
+   issuer/subject names for path building, the raw tbsCertificate as the
+   signature message, the SubjectPublicKeyInfo, the outer
+   signatureAlgorithm OID, and the signatureValue bits. *)
 
 type error =
   | Der of Der.error
@@ -17,6 +20,8 @@ type error =
   | Bool_shape
   | Key_usage_shape
   | San_shape
+  | Alg_shape
+  | Signature_shape
 
 let error_to_string e =
   match e with
@@ -31,6 +36,8 @@ let error_to_string e =
   | Bool_shape -> "bool_shape"
   | Key_usage_shape -> "key_usage_shape"
   | San_shape -> "san_shape"
+  | Alg_shape -> "alg_shape"
+  | Signature_shape -> "signature_shape"
 
 let der r = Result.map_error (fun e -> Der e) r
 
@@ -271,8 +278,8 @@ let drop_version kids =
 
 let tbs_fields fields =
   match fields with
-  | _serial :: _sigalg :: _issuer :: validity :: _subject :: _spki :: tail ->
-      Ok (validity, tail)
+  | _serial :: _sigalg :: issuer :: validity :: subject :: spki :: tail ->
+      Ok (issuer, validity, subject, spki, tail)
   | too_short ->
       ignore too_short;
       Error Tbs_shape
@@ -286,30 +293,90 @@ let validity_times vkids =
       ignore not_two;
       Error Validity_shape
 
-let parse s : (Svid.cert, error) result =
+(* Certificate ::= SEQUENCE { tbsCertificate, signatureAlgorithm,
+   signatureValue }. *)
+let top_three s =
   Result.bind (der (Der.parse_exact s)) (fun cert ->
       Result.bind (seq_children Cert_shape cert) (fun top ->
-          Result.bind
-            (match top with
-            | [ tbs; _alg; _sigval ] -> Ok tbs
-            | not_three ->
-                ignore not_three;
-                Error Cert_shape)
-            (fun tbs ->
-              Result.bind (seq_children Tbs_shape tbs) (fun tbs_kids ->
-                  Result.bind (tbs_fields (drop_version tbs_kids))
-                    (fun (validity, tail) ->
-                      Result.bind (seq_children Validity_shape validity)
-                        (fun vkids ->
-                          Result.bind (validity_times vkids)
-                            (fun (not_before, not_after) ->
-                              Result.map
-                                (fun (san_uris, is_ca, key_usage) ->
-                                  {
-                                    Svid.san_uris;
-                                    not_before;
-                                    not_after;
-                                    is_ca;
-                                    key_usage;
-                                  })
-                                (parse_extensions tail))))))))
+          match top with
+          | [ tbs; alg; sigval ] -> Ok (tbs, alg, sigval)
+          | not_three ->
+              ignore not_three;
+              Error Cert_shape))
+
+(* Fields off the TBS: the Svid.cert plus the issuer, subject, and SPKI
+   nodes for chain validation. *)
+let tbs_cert tbs =
+  Result.bind (seq_children Tbs_shape tbs) (fun tbs_kids ->
+      Result.bind (tbs_fields (drop_version tbs_kids))
+        (fun (issuer, validity, subject, spki, tail) ->
+          Result.bind (seq_children Validity_shape validity) (fun vkids ->
+              Result.bind (validity_times vkids) (fun (not_before, not_after) ->
+                  Result.map
+                    (fun (san_uris, is_ca, key_usage) ->
+                      ( {
+                          Svid.san_uris;
+                          not_before;
+                          not_after;
+                          is_ca;
+                          key_usage;
+                        },
+                        issuer,
+                        subject,
+                        spki ))
+                    (parse_extensions tail)))))
+
+let parse s : (Svid.cert, error) result =
+  Result.bind (top_three s) (fun (tbs, _alg, _sigval) ->
+      tbs_cert tbs |> Result.map (fun (c, _issuer, _subject, _spki) -> c))
+
+(* AlgorithmIdentifier ::= SEQUENCE { algorithm OID, parameters ANY };
+   returns the OID content octets. *)
+let alg_oid alg =
+  Result.bind (seq_children Alg_shape alg) (fun kids ->
+      match kids with
+      | o :: _params when is_prim o 6 -> Ok o.Der.value
+      | wrong_head ->
+          ignore wrong_head;
+          Error Alg_shape)
+
+(* signatureValue BIT STRING; the unused-bits octet must be zero for
+   every signature algorithm an SVID can carry. *)
+let sig_bits sigval =
+  match () with
+  | () when not (is_prim sigval 3) -> Error Signature_shape
+  | () -> (
+      match String.to_seq sigval.Der.value |> List.of_seq with
+      | '\x00' :: content -> Ok (List.to_seq content |> String.of_seq)
+      | no_zero_prefix ->
+          ignore no_zero_prefix;
+          Error Signature_shape)
+
+(* Everything Chain.Make consumes. issuer and subject are the raw DER
+   Name octets, compared byte-for-byte during path building (RFC 5280
+   binary comparison; no canonicalization). *)
+type full = {
+  cert : Svid.cert;
+  issuer : string;
+  subject : string;
+  spki : string;
+  tbs_raw : string;
+  sig_alg_oid : string;
+  sig_value : string;
+}
+
+let parse_full s : (full, error) result =
+  Result.bind (top_three s) (fun (tbs, alg, sigval) ->
+      Result.bind (tbs_cert tbs) (fun (cert, issuer, subject, spki) ->
+          Result.bind (alg_oid alg) (fun sig_alg_oid ->
+              sig_bits sigval
+              |> Result.map (fun sig_value ->
+                     {
+                       cert;
+                       issuer = issuer.Der.raw;
+                       subject = subject.Der.raw;
+                       spki = spki.Der.raw;
+                       tbs_raw = tbs.Der.raw;
+                       sig_alg_oid;
+                       sig_value;
+                     }))))

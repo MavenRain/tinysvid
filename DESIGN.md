@@ -128,8 +128,8 @@ Phase B: typed core.
 - [x] M10 X.509-SVID leaf checks (URI SAN, flags, window, trust domain)
 - [x] M11 DER tag-length-value walker, total, over string input
 - [x] M12 X.509 field extraction (SAN URI, validity, basicConstraints, keyUsage)
-- [ ] M13 signature backend as a module type (Ed25519, P-256 provided outside the core)
-- [ ] M14 chain validation: path build to bundle roots plus epoch-gap rule
+- [x] M13 signature backend as a module type (Ed25519, P-256 provided outside the core)
+- [x] M14 chain validation: path build to bundle roots plus epoch-gap rule
 
 Phase C: ZxCaml artifacts.
 

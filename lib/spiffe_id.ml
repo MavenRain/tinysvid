@@ -71,3 +71,12 @@ let to_string id =
 let equal a b =
   Trust_domain.equal a.td b.td
   && List.equal String.equal a.segments b.segments
+
+let error_to_string e =
+  match e with
+  | Bad_scheme -> "bad_scheme"
+  | Trust_domain_error te -> "trust_domain:" ^ Trust_domain.error_to_string te
+  | Empty_segment -> "empty_segment"
+  | Dot_segment s -> "dot_segment:" ^ s
+  | Bad_segment_char c -> Printf.sprintf "bad_segment_char:%c" c
+  | Too_long n -> Printf.sprintf "too_long:%d" n

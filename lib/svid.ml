@@ -65,3 +65,15 @@ let validate_leaf ~now ~(bundle : Bundle.usable) (c : cert) :
                       (Bundle.usable_td bundle)
                   then Ok id
                   else Error Foreign_trust_domain))))
+
+let error_to_string e =
+  match e with
+  | No_uri_san -> "no_uri_san"
+  | Multiple_uri_san -> "multiple_uri_san"
+  | Leaf_is_ca -> "leaf_is_ca"
+  | Missing_digital_signature -> "missing_digital_signature"
+  | Signing_usage_on_leaf -> "signing_usage_on_leaf"
+  | Not_yet_valid -> "not_yet_valid"
+  | Expired -> "expired"
+  | Bad_id ie -> "bad_id:" ^ Spiffe_id.error_to_string ie
+  | Foreign_trust_domain -> "foreign_trust_domain"

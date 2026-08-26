@@ -10,7 +10,10 @@ type tag_class = Universal | Application | Context_specific | Private_class
 
 type header = { cls : tag_class; constructed : bool; number : int }
 
-type tlv = { header : header; value : string }
+(* raw is the node's exact input octets (tag, length, value): chain
+   validation signs and verifies over raw tbsCertificate bytes, and DER
+   is canonical, so keeping the span beats re-encoding. *)
+type tlv = { header : header; value : string; raw : string }
 
 type error =
   | Truncated_header
@@ -64,7 +67,7 @@ let parse_length bytes =
   | l0 :: rest -> (
       let b = Char.code l0 in
       match () with
-      | () when b < 0x80 -> Ok (b, rest)
+      | () when b < 0x80 -> Ok (b, [ l0 ], rest)
       | () when b = 0x80 -> Error Indefinite_length
       | () -> (
           let n = b land 0x7f in
@@ -87,7 +90,7 @@ let parse_length bytes =
                      match () with
                      | () when leading_zero || len < 0x80 ->
                          Error Non_minimal_length
-                     | () -> Ok (len, tl))))
+                     | () -> Ok (len, l0 :: len_bytes, tl))))
 
 (* One TLV off the head of the byte list; returns the node and the rest. *)
 let parse_node bytes =
@@ -99,7 +102,7 @@ let parse_node bytes =
       match () with
       | () when number = 0x1f -> Error High_tag_number
       | () ->
-          Result.bind (parse_length rest) (fun (len, tl) ->
+          Result.bind (parse_length rest) (fun (len, len_octets, tl) ->
               take len tl
               |> Option.to_result
                    ~none:(Truncated_value { need = len; have = List.length tl })
@@ -112,6 +115,9 @@ let parse_node bytes =
                              number;
                            };
                          value = List.to_seq v |> String.of_seq;
+                         raw =
+                           List.to_seq ((t :: len_octets) @ v)
+                           |> String.of_seq;
                        },
                        tl' ))))
 

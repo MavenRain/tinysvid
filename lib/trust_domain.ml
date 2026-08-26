@@ -28,3 +28,9 @@ let parse s =
 let to_string (Td s) = s
 
 let equal (Td a) (Td b) = String.equal a b
+
+let error_to_string e =
+  match e with
+  | Empty -> "empty"
+  | Too_long n -> Printf.sprintf "too_long:%d" n
+  | Bad_char c -> Printf.sprintf "bad_char:%c" c

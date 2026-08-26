@@ -74,6 +74,11 @@ let pair () =
   wrap "socketpair" (fun () -> Unix.socketpair Unix.PF_UNIX Unix.SOCK_STREAM 0)
   |> Result.map (fun (a, b) -> (Conn a, Conn b))
 
+(* Close only our sending side: the peer then reads Eof while its own
+   writes toward us still succeed. *)
+let shutdown_send (Conn fd) =
+  wrap "shutdown" (fun () -> Unix.shutdown fd Unix.SHUTDOWN_SEND)
+
 let read_some (Conn fd) ~max =
   match () with
   | () when max <= 0 -> Ok ""

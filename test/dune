@@ -47,3 +47,18 @@
  (name test_pb)
  (modules test_pb)
  (libraries tinysvid))
+
+(test
+ (name test_hpack)
+ (modules test_hpack)
+ (libraries tinysvid))
+
+(test
+ (name test_wl_client)
+ (modules test_wl_client)
+ (libraries tinysvid))
+
+(test
+ (name test_wl_io)
+ (modules test_wl_io)
+ (libraries tinysvid tinysvid_io unix))

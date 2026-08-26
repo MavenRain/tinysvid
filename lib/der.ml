@@ -134,6 +134,7 @@ let parse_nodes bytes =
   go [] bytes
 
 let bytes_of_string s = String.to_seq s |> List.of_seq
+let string_of_chars l = List.to_seq l |> String.of_seq
 
 (* One TLV plus any remaining input. *)
 let parse_one s =

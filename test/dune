@@ -62,3 +62,13 @@
  (name test_wl_io)
  (modules test_wl_io)
  (libraries tinysvid tinysvid_io unix))
+
+(test
+ (name test_ed25519)
+ (modules test_ed25519)
+ (libraries tinysvid_sig))
+
+(test
+ (name test_backend)
+ (modules test_backend)
+ (libraries tinysvid tinysvid_sig sha2))

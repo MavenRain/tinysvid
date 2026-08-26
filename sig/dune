@@ -1,0 +1,4 @@
+(library
+ (name tinysvid_sig)
+ (libraries tinysvid sha2)
+ (modules limbs ed25519 p256 backend))

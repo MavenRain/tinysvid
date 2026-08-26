@@ -54,15 +54,7 @@ let steps coupling w =
 
 let post coupling w = List.map snd (steps coupling w)
 
+(* Reachable closure via the kernel; the StateSet result keeps the
+   downstream gates (correspondence, zx differential) unchanged. *)
 let reachable coupling start =
-  let rec go frontier seen =
-    match frontier with
-    | [] -> seen
-    | w :: rest ->
-        let fresh_succs =
-          post coupling w |> List.filter (fun v -> not (StateSet.mem v seen))
-        in
-        let seen = List.fold_left (fun s v -> StateSet.add v s) seen fresh_succs in
-        go (List.rev_append fresh_succs rest) seen
-  in
-  go [ start ] (StateSet.singleton start)
+  Ctlk.reachable Stdlib.compare (post coupling) start |> StateSet.of_list

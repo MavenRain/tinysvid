@@ -1,10 +1,23 @@
-(* Property suite. Exit code 0 only when every verdict matches its
-   expectation. The N-check runs on the Uncoupled negative-control frame
-   and must expose the hazard; the Coupled design plus the
-   Fresh/Grace/Void types exclude it. *)
+(* Property suite over the ctlk_topos kernel: each property is a CTLK
+   formula evaluated by Ctlk.eval to a subobject of the reachable state
+   object. Exit code 0 only when every verdict matches its expectation.
+   The N-check runs on the Uncoupled negative-control frame and must
+   expose the hazard; the Coupled design plus the Fresh/Grace/Void types
+   exclude it. *)
 
 open Svid_model
-open State
+module T = Topos
+
+type agent = Workload | Authority
+
+type prop =
+  | Usable
+  | Fresh
+  | Grace
+  | Gap_is of int
+  | Gap_at_most of int
+  | Gap_at_least of int
+  | Renew_enabled
 
 type kind = Must_be_valid | Must_be_satisfiable
 
@@ -12,104 +25,142 @@ type check = {
   name : string;
   desc : string;
   kind : kind;
-  univ : StateSet.t;
-  sub : StateSet.t;
+  frame : Frame.coupling;
+  form : (prop, agent) Ctlk.form;
 }
 
+let view ag w =
+  match ag with
+  | Workload -> Props.view_workload w
+  | Authority -> Props.view_authority w
+
+let den coupling p =
+  match p with
+  | Usable -> Props.usable
+  | Fresh -> Props.fresh
+  | Grace -> Props.grace
+  | Gap_is k -> Props.gap_is k
+  | Gap_at_most k -> Props.gap_at_most k
+  | Gap_at_least k -> Props.gap_at_least k
+  | Renew_enabled ->
+      fun w ->
+        Frame.steps coupling w
+        |> List.exists (fun (n, _) ->
+               match n with
+               | Frame.Renew -> true
+               | Frame.Rotate | Frame.Tick | Frame.Sync | Frame.Expire
+               | Frame.Link_flip ->
+                   false)
+
 let () =
-  let univ_c = Frame.reachable Frame.Coupled init in
-  let post_c = Frame.post Frame.Coupled in
-  let univ_u = Frame.reachable Frame.Uncoupled init in
-  let pc p = Sub.of_pred univ_c p in
-  let usable_c = pc Props.usable in
-  let fresh_c = pc Props.fresh in
-  let grace_c = pc Props.grace in
-  let know_w = Modal.know ~obs:Props.obs_workload univ_c in
-  let know_a = Modal.know ~obs:Props.obs_authority univ_c in
-  let enabled t w = Frame.steps Frame.Coupled w |> List.exists (fun (n, _) -> n = t) in
+  let agents = [ Workload; Authority ] in
+  let sys_c =
+    Ctlk.system_of Stdlib.compare (Frame.post Frame.Coupled) State.init agents view
+  in
+  let sys_u =
+    Ctlk.system_of Stdlib.compare (Frame.post Frame.Uncoupled) State.init agents
+      view
+  in
+  let open Ctlk in
   let checks =
     [
       {
         name = "A1-rotation-safety";
         desc = "AG (usable -> gap <= 1)";
         kind = Must_be_valid;
-        univ = univ_c;
-        sub = Sub.impl univ_c usable_c (pc (Props.gap_at_most 1));
+        frame = Frame.Coupled;
+        form = Imp (Atom Usable, Atom (Gap_at_most 1));
       };
       {
         name = "A2-no-deadlock";
         desc = "AG EX true";
         kind = Must_be_valid;
-        univ = univ_c;
-        sub = Modal.ex ~post:post_c univ_c (Sub.top univ_c);
+        frame = Frame.Coupled;
+        form = Ex Tt;
       };
       {
         name = "A3-recovery";
         desc = "AG EF fresh";
         kind = Must_be_valid;
-        univ = univ_c;
-        sub = Ctlk.ag ~post:post_c univ_c (Ctlk.ef ~post:post_c univ_c fresh_c);
+        frame = Frame.Coupled;
+        form = Ag (Ef (Atom Fresh));
       };
       {
         name = "A4-fresh-is-knowledge";
         desc = "AG (fresh -> K_workload gap = 0)";
         kind = Must_be_valid;
-        univ = univ_c;
-        sub = Sub.impl univ_c fresh_c (know_w (pc (Props.gap_is 0)));
+        frame = Frame.Coupled;
+        form = Imp (Atom Fresh, Know (Workload, Atom (Gap_is 0)));
       };
       {
         name = "A5-grace-is-bounded-knowledge";
         desc = "AG (grace -> K_workload gap <= 1)";
         kind = Must_be_valid;
-        univ = univ_c;
-        sub = Sub.impl univ_c grace_c (know_w (pc (Props.gap_at_most 1)));
+        frame = Frame.Coupled;
+        form = Imp (Atom Grace, Know (Workload, Atom (Gap_at_most 1)));
       };
       {
         name = "A6-grace-uncertainty";
         desc = "EF (grace & !K_workload gap = 0 & !K_workload gap = 1)";
         kind = Must_be_satisfiable;
-        univ = univ_c;
-        sub =
-          Sub.meet grace_c
-            (Sub.meet
-               (Sub.neg univ_c (know_w (pc (Props.gap_is 0))))
-               (Sub.neg univ_c (know_w (pc (Props.gap_is 1)))));
+        frame = Frame.Coupled;
+        form =
+          And
+            ( Atom Grace,
+              And
+                ( Not (Know (Workload, Atom (Gap_is 0))),
+                  Not (Know (Workload, Atom (Gap_is 1))) ) );
       };
       {
         name = "A7-renew-needs-usable-bundle";
         desc = "AG (enabled renew -> usable)";
         kind = Must_be_valid;
-        univ = univ_c;
-        sub = Sub.impl univ_c (pc (enabled Frame.Renew)) usable_c;
+        frame = Frame.Coupled;
+        form = Imp (Atom Renew_enabled, Atom Usable);
       };
       {
         name = "A8-authority-blindness";
         desc = "EF (usable & !K_authority usable)";
         kind = Must_be_satisfiable;
-        univ = univ_c;
-        sub = Sub.meet usable_c (Sub.neg univ_c (know_a usable_c));
+        frame = Frame.Coupled;
+        form = And (Atom Usable, Not (Know (Authority, Atom Usable)));
       };
       {
         name = "N1-uncoupled-hazard";
         desc = "uncoupled frame reaches usable & gap >= 2";
         kind = Must_be_satisfiable;
-        univ = univ_u;
-        sub =
-          Sub.meet
-            (Sub.of_pred univ_u Props.usable)
-            (Sub.of_pred univ_u (Props.gap_at_least 2));
+        frame = Frame.Uncoupled;
+        form = And (Atom Usable, Atom (Gap_at_least 2));
       };
     ]
   in
-  Printf.printf "worlds: coupled %d, uncoupled %d\n"
-    (StateSet.cardinal univ_c) (StateSet.cardinal univ_u);
+  Printf.printf "worlds: coupled %d, uncoupled %d\n" (T.size sys_c.Ctlk.space)
+    (T.size sys_u.Ctlk.space);
+  (* Frame.reachable serves the correspondence and zx gates; it must
+     agree with the kernel closure the property systems are built on. *)
+  let reach_agree =
+    State.StateSet.equal
+      (Frame.reachable Frame.Coupled State.init)
+      (State.StateSet.of_list sys_c.Ctlk.space.T.carrier)
+    && State.StateSet.equal
+         (Frame.reachable Frame.Uncoupled State.init)
+         (State.StateSet.of_list sys_u.Ctlk.space.T.carrier)
+  in
+  Printf.printf "%s R0-reachable-agrees-kernel   both frames\n"
+    (if reach_agree then "PASS" else "FAIL");
   let failures =
     List.fold_left
       (fun acc c ->
+        let sys, den_f =
+          match c.frame with
+          | Frame.Coupled -> (sys_c, den Frame.Coupled)
+          | Frame.Uncoupled -> (sys_u, den Frame.Uncoupled)
+        in
+        let sub = Ctlk.eval sys den_f c.form in
         let got =
           match c.kind with
-          | Must_be_valid -> Sub.is_valid c.univ c.sub
-          | Must_be_satisfiable -> Sub.nonempty c.sub
+          | Must_be_valid -> T.holds_everywhere sys.Ctlk.space sub
+          | Must_be_satisfiable -> List.exists sub sys.Ctlk.space.T.carrier
         in
         let label =
           match c.kind with
@@ -119,7 +170,8 @@ let () =
         let verdict = if got then "PASS" else "FAIL" in
         Printf.printf "%s %-28s must be %-11s  %s\n" verdict c.name label c.desc;
         acc + Bool.to_int (not got))
-      0 checks
+      (Bool.to_int (not reach_agree))
+      checks
   in
-  Printf.printf "%d checks, %d failures\n" (List.length checks) failures;
+  Printf.printf "%d checks, %d failures\n" (List.length checks + 1) failures;
   exit (Int.min failures 1)

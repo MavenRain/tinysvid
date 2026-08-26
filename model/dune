@@ -1,8 +1,9 @@
 (library
  (name svid_model)
- (modules state sub frame modal ctlk props))
+ (libraries ctlk_topos)
+ (modules state frame props))
 
 (test
  (name check)
  (modules check)
- (libraries svid_model))
+ (libraries svid_model ctlk_topos))

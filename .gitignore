@@ -3,3 +3,5 @@ zx/out/
 *.so
 *.map
 .DS_Store
+zx/rust/*/target/
+zx/rust/out/

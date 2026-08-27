@@ -151,7 +151,11 @@ Phase C: ZxCaml artifacts.
 - [x] M16 zx SPIFFE ID charset validator artifact (5,520 B .so)
 - [x] M17 zx bundle-step artifact (degrade/sync over the int encoding, 3,544 B .so)
 - [x] M18 zx SVID window-plus-gap check artifact (3,464 B .so)
-- [ ] M19 size table: each zx artifact against its Rust equivalent
+- [x] M19 size table: each zx artifact against its Rust equivalent
+      (zx/SIZES.md; dependency-free no_std crates under zx/rust/,
+      same SBF machine, black_box pins against whole-check constant
+      folding; Rust smaller on the three sweep artifacts, larger on
+      the pin-heavy charset)
 - [x] M20 differential conformance: host OCaml against zx semantics on shared
       vectors (`test/test_zx.ml`; the zx sources build as the host library
       `tinysvid_zx`)

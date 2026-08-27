@@ -1,0 +1,7 @@
+# M30 size budgets, bytes. Each zx artifact must stay at or under its
+# budget; the values are the exact sizes of the 2026-08-25 build. A
+# deliberate size increase updates this file in the same commit.
+zx_core 4936
+zx_charset 5520
+zx_step 3544
+zx_window 3464

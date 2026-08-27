@@ -171,10 +171,14 @@ Phase D: Workload API.
 
 Phase E: hardening.
 
-- [ ] M27 negative corpus for both parsers; every malformed vector must reject
+- [x] M27 negative corpus for both parsers (test/test_negative.ml): sound
+      sweeps (DER prefix, outer-length, trailing; pb cut-point with
+      boundary positive controls) plus per-construct vectors pinned to
+      exact error names
 - [ ] M28 end-to-end demo against a spire-agent socket, documented
 - [ ] M29 footprint report: artifact sizes, static footprint, comparison table
-- [ ] M30 gates.sh covers model, tests, zx build, and size regression
+- [x] M30 gates.sh covers model, tests, zx build (--zx), and size
+      regression against zx/size-budget.txt
 
 ## Gates
 

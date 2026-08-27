@@ -87,3 +87,8 @@
  (name test_bundle_file)
  (modules test_bundle_file)
  (libraries tinysvid tinysvid_io unix))
+
+(test
+ (name test_negative)
+ (modules test_negative)
+ (libraries tinysvid))

@@ -67,12 +67,70 @@ let () =
                  (observe_model (Frame.degrade w.bundle)))
              worlds
          in
+         (* M26: the rotation engine is the code image of the
+            (auth, bundle) projection of the Coupled frame. Lift each
+            world, apply the engine step, and compare against the model
+            transition. refresh is checked against the Sync result on
+            every world: the link-Up enabling condition lives with the
+            caller (a watch response only arrives over a live link). *)
+         let lift_engine (w : State.state) =
+           {
+             Tinysvid.Rotation.td;
+             epoch = Tinysvid.Bundle.Epoch (State.epoch_index w.auth);
+             bundle = lift ~td w.bundle;
+           }
+         in
+         let observe_engine e =
+           "auth:"
+           ^ string_of_int
+               (Tinysvid.Bundle.epoch_value (Tinysvid.Rotation.epoch e))
+           ^ "|"
+           ^ observe_lib (Tinysvid.Rotation.bundle e)
+         in
+         let observe_pair (a, b) =
+           "auth:" ^ string_of_int (State.epoch_index a) ^ "|" ^ observe_model b
+         in
+         let rotate_commutes =
+           List.for_all
+             (fun (w : State.state) ->
+               State.epoch_succ w.auth
+               |> Option.fold ~none:true
+                    ~some:(fun a' ->
+                      String.equal
+                        (observe_engine
+                           (Tinysvid.Rotation.rotate (lift_engine w)))
+                        (observe_pair (a', Frame.degrade w.bundle))))
+             worlds
+         in
+         let tick_commutes =
+           List.for_all
+             (fun (w : State.state) ->
+               String.equal
+                 (observe_engine (Tinysvid.Rotation.tick (lift_engine w)))
+                 (observe_pair (w.auth, Frame.degrade w.bundle)))
+             worlds
+         in
+         let refresh_commutes =
+           List.for_all
+             (fun (w : State.state) ->
+               String.equal
+                 (observe_engine
+                    (Tinysvid.Rotation.refresh (lift_engine w)
+                       ~roots:(Tinysvid.Bundle.Roots [])))
+                 (observe_pair (w.auth, State.Held (State.Fresh, w.auth))))
+             worlds
+         in
          let failures =
            List.fold_left ( + ) 0
              [
                check "lift is faithful on every reachable world" lift_faithful;
                check "degrade commutes with the model on every reachable world"
                  degrade_commutes;
+               check "engine rotate commutes with the model Rotate"
+                 rotate_commutes;
+               check "engine tick commutes with the model Tick" tick_commutes;
+               check "engine refresh commutes with the model Sync"
+                 refresh_commutes;
              ]
          in
          exit (Int.min failures 1))

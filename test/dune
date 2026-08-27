@@ -72,3 +72,18 @@
  (name test_backend)
  (modules test_backend)
  (libraries tinysvid tinysvid_sig sha2))
+
+(test
+ (name test_bundle_source)
+ (modules test_bundle_source)
+ (libraries tinysvid))
+
+(test
+ (name test_rotation)
+ (modules test_rotation)
+ (libraries tinysvid))
+
+(test
+ (name test_bundle_file)
+ (modules test_bundle_file)
+ (libraries tinysvid tinysvid_io unix))

@@ -165,9 +165,9 @@ Phase D: Workload API.
       received header blocks is deferred to M24)
 - [x] M23 protobuf codec for X509SVIDRequest/Response (lib/pb.ml: varint,
       field keys, unknown-field skipping, the two Workload API messages)
-- [ ] M24 client: fetch and watch X509 SVIDs and bundles into typed state
-- [ ] M25 file-based bundle source for fully disconnected nodes
-- [ ] M26 rotation loop wired through Bundle.degrade (the path A1/A7 certify)
+- [x] M24 client: fetch and watch X509 SVIDs and bundles into typed state
+- [x] M25 file-based bundle source for fully disconnected nodes
+- [x] M26 rotation loop wired through Bundle.degrade (the path A1/A7 certify)
 
 Phase E: hardening.
 

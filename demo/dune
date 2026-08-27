@@ -1,0 +1,11 @@
+; M28: the end-to-end demo. fetch_svid is the client; fake_agent is a
+; one-shot Workload API server for machines without a spire-agent.
+(executable
+ (name fetch_svid)
+ (modules fetch_svid)
+ (libraries tinysvid tinysvid_io))
+
+(executable
+ (name fake_agent)
+ (modules fake_agent)
+ (libraries tinysvid tinysvid_io))

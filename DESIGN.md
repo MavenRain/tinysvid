@@ -118,6 +118,7 @@ lib/     tinysvid library: trust_domain, spiffe_id, bundle, svid
 io/      tinysvid_io library: uds (Unix-domain-socket transport, unix only)
 test/    vectors, behavior tests, model-code correspondence gate
 zx/      ZxCaml dialect artifacts + build script (omlz)
+demo/    end-to-end demo: fetch_svid client, fake Workload API agent
 gates.sh full local gate
 ```
 
@@ -179,8 +180,12 @@ Phase E: hardening.
       sweeps (DER prefix, outer-length, trailing; pb cut-point with
       boundary positive controls) plus per-construct vectors pinned to
       exact error names
-- [ ] M28 end-to-end demo against a spire-agent socket, documented
-- [ ] M29 footprint report: artifact sizes, static footprint, comparison table
+- [x] M28 end-to-end demo (demo/: fetch_svid client, one-shot fake agent
+      that enforces the spire-agent door checks, demo.sh with negative
+      controls, DEMO.md; real spire-agent instructions included)
+- [x] M29 footprint report (FOOTPRINT.md via footprint.sh: measured zx
+      and Rust artifact sizes, host client static footprint, pinned
+      spire-agent 1.15.3 comparison)
 - [x] M30 gates.sh covers model, tests, zx build (--zx), and size
       regression against zx/size-budget.txt
 

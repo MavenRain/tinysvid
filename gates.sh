@@ -6,6 +6,10 @@ here="$(cd "$(dirname "$0")" && pwd)"
 dune build --root "$here"
 dune runtest --root "$here" --force
 
+# M28 end-to-end demo: the fake agent and the client over a real socket,
+# with its own negative controls
+"$here/demo/demo.sh"
+
 # zx artifacts: rebuild on --zx, otherwise use what is in zx/out
 if [ "${1:-}" = "--zx" ]; then
   "$here/zx/build-zx.sh"
